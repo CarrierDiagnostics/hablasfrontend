@@ -687,8 +687,8 @@ console.log ("starting script");
 function initializeWebSocket() {
     console.log("initializing websocket");
 
-    socket = new WebSocket('wss://carriertech.uk:8675'); // Create the WebSocket connection
-    //socket = new WebSocket ('ws://localhost:8765'); //port appears in local_web_server.py (for Fuckoffee)
+    //olivia 30 ENERO socket = new WebSocket('wss://carriertech.uk:8675'); // Create the WebSocket connection
+    socket = new WebSocket ('ws://localhost:8765'); //port appears in local_web_server.py (for Fuckoffee)
     socket.addEventListener('open',() => {
         console.log('WebSocket connection established');
     });
@@ -1319,8 +1319,9 @@ document.querySelectorAll('.modal .close').forEach(closeBtn => {
         }
 
         socket.addEventListener('open',() => {
-            console.log('WebSocket connection established');
+            console.log('WebSocket connection established for login');
             const loginData = {
+                type: 'login', //suggested by Claude
                 username: username,
                 password: password,
             };  
@@ -1335,8 +1336,26 @@ document.querySelectorAll('.modal .close').forEach(closeBtn => {
         username=usernameInput.value;
         password=passwordInput.value;
         console.log("signup button clicked");
-        console.log("username is: ", username);
-        console.log("password is: ", password);
+        console.log("(new) username is: ", username);
+        console.log("(new) password is: ", password);
+
+        if(!socket || socket.readyState !== WebSocket.OPEN) { //if socket is not open or not initialized
+            console.error('WebSocket connection not established for signup'); 
+            socket = initializeWebSocket();
+        }
+
+        socket.addEventListener('open',() => {
+            console.log('WebSocket connection established for signup');
+            const signupData = {
+                type: 'signup', 
+                username: username,
+                password: password,
+            };  
+            socket.send(JSON.stringify(signupData)); 
+            console.log("signupData sent");   
+            //signupButton.style.backgroundColor = '#e0e0e0';
+        }); 
+        
 
     });
 
