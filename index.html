@@ -695,6 +695,39 @@ function initializeWebSocket() {
 
     socket.addEventListener('message', (event) => {
         console.log('WebSocket message received:', event.data);
+        const response = JSON.parse(event.data);
+        
+        console.log('parsed response:', response); //olivia
+        console.log('Status:', response.status);
+        console.log('Message:', response.message);
+        console.log('Type:', response.type);
+
+        
+        console.log('response to login/signup: ', response);
+        if ((response.status === 'success') && (response.message === "User created successfully")) {
+            console.log('Signup successful');
+            alert('Successfully created user!');
+            
+        } else if ((response.status === 'error') && (response.message === "User created successfully")) {
+            console.error('Signup failed');
+            alert('Signup failed');
+        } 
+
+        if ((response.status === 'success') && (response.token)) {
+            console.log('Login successful');
+            //alert('Successfully logged in!');
+            handleSuccessfulLogin(response);
+            alert(`Welcome, ${response.username}!`);
+            handleSuccessfulLogin(response);
+            // to save the username and token but im fixing other stuff first
+            // localStorage.setItem('username', response.username);
+            // localStorage.setItem('token', response.token);
+        } else if ((response.status === 'error') && (response.type === 'login')) {
+            console.error('Login failed');
+            alert('Login failed');
+        }
+        
+
     });
 
     return socket;
@@ -1353,7 +1386,11 @@ document.querySelectorAll('.modal .close').forEach(closeBtn => {
             };  
             socket.send(JSON.stringify(signupData)); 
             console.log("signupData sent");   
-            //signupButton.style.backgroundColor = '#e0e0e0';
+            signupButton.style.backgroundColor = '#FFB6C1';  
+            setTimeout(() => {
+                signupButton.style.backgroundColor = '#e0e0e0';  
+            }, 2000);  // 2000 milisegundos = 2 segundos
+            
         }); 
         
 
@@ -1361,6 +1398,18 @@ document.querySelectorAll('.modal .close').forEach(closeBtn => {
 
     function openUserAccountOptions() {
         document.getElementById('user-account-options-modal').style.display = 'block';
+    }
+
+    function handleSuccessfulLogin(userData) {
+
+        const userModal = document.getElementById('user-modal');
+        userModal.style.display = 'none'; 
+
+        const userAccountDiv = document.getElementById('user-account');
+        if (userAccountDiv) {
+            userAccountDiv.textContent = `Hi, ${userData.username}!`; 
+        }
+
     }
 
 </script>
