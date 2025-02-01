@@ -536,7 +536,7 @@
                     <option value="it">Italian</option>
                 </select>
                 <div id="user-account-options" class="options" onclick="openUserAccountOptions()">Your account</div>
-                <div id="log-out" class="options">Log out</div>
+                <div id="log-out-button" class="options">Log out</div>
             </div>
     </div>
 
@@ -675,10 +675,11 @@
     const passwordInput = document.getElementById('user-password');
     const loginButton = document.getElementById ('login-button');
     const signupButton = document.getElementById ('signup-button');
-    const forgotPasswordButton = document.getElementById ('forgot-password-button');
+    const forgotPasswordBtn = document.getElementById ('forgot-password-button');
     const userAccountOptionsBtn = document.getElementById ('user-account-options');
     const changeInfoButton = document.getElementById ('change-info-button');
     const deleteAccountButton = document.getElementById ('delete-account-button');
+    const logOutButton = document.getElementById ('log-out-button');
 
     let username = '';
     let password = '';
@@ -704,6 +705,7 @@ function initializeWebSocket() {
 
         
         console.log('response to login/signup: ', response);
+        console.log('response.preferred_language: ', response.preferred_language); //olivia
         if ((response.status === 'success') && (response.message === "User created successfully")) {
             console.log('Signup successful');
             alert('Successfully created user!');
@@ -718,7 +720,7 @@ function initializeWebSocket() {
             //alert('Successfully logged in!');
             handleSuccessfulLogin(response);
             alert(`Welcome, ${response.username}!`);
-            handleSuccessfulLogin(response);
+           
             // to save the username and token but im fixing other stuff first
             // localStorage.setItem('username', response.username);
             // localStorage.setItem('token', response.token);
@@ -1334,6 +1336,9 @@ document.querySelectorAll('.modal .close').forEach(closeBtn => {
 
     function openUserAccount() {
         document.getElementById('user-modal').style.display = 'block';
+        signupButton.style.backgroundColor = '#f5f5f5'; 
+        loginButton.style.backgroundColor = '#f5f5f5'; 
+        forgotPasswordBtn.style.backgroundColor = '#f5f5f5'; 
        }
 
     loginButton.addEventListener('click', () => {
@@ -1400,8 +1405,21 @@ document.querySelectorAll('.modal .close').forEach(closeBtn => {
         document.getElementById('user-account-options-modal').style.display = 'block';
     }
 
+    logOutButton.addEventListener('click', () => {
+        console.log("logOutButton clicked");
+        if (userAccountBtn) {
+            userAccountBtn.textContent = 'Log in/sign up';
+        }
+        username = '';
+        password = '';
+        languageUserOptionsSelect.value = "fr"; //default language
+
+        alert("You have been successfully logged out");
+    });
+
     function handleSuccessfulLogin(userData) {
 
+        console.log("successful login");
         const userModal = document.getElementById('user-modal');
         userModal.style.display = 'none'; 
 
@@ -1410,6 +1428,12 @@ document.querySelectorAll('.modal .close').forEach(closeBtn => {
             userAccountDiv.textContent = `Hi, ${userData.username}!`; 
         }
 
+        if (languageSel && userData.preferred_language) {
+            console.log("preferred_language: ", userData.preferred_language);
+            languageUserOptionsSelect.value = userData.preferred_language;
+            console.log("languageUserOptionsSelect.value: ", languageUserOptionsSelect.value);
+        } 
+        //add the books, current book and books position of the user. once this is done, check that they are correctly erased when the user logs out.
     }
 
 </script>
