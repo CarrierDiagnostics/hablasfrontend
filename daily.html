@@ -288,7 +288,7 @@ function waitForEpub() {
 
 // Replace the existing WebSocket implementation with a simpler function-based approach
 function createWebSocketConnection() {
-    const socket = new WebSocket('wss://carriertech.uk:8675');
+    const socket = new WebSocket('wss://carriertech.uk:8676');
     //const socket = new WebSocket('ws://localhost:8675');
     socket.addEventListener('open', (event) => {
         console.log('WebSocket connection established');
@@ -1013,8 +1013,7 @@ document.querySelectorAll('.modal .close').forEach(closeBtn => {
                             element.appendChild(sentenceSpan);
                         });
                     });
-                });
-            }
+                }
             
             fileDiv.style.display = "none";
             
@@ -1621,8 +1620,6 @@ document.querySelectorAll('.modal .close').forEach(closeBtn => {
         if (!selectedBook) {
             // If no book is selected, show the books modal instead
             booksModal.style.display = "block";
-            dailyFlag = false; 
-            booksModal.style.display.word
             pageleModal.style.display = "none";
             return;
         }
@@ -1657,154 +1654,196 @@ document.querySelectorAll('.modal .close').forEach(closeBtn => {
                         sentence !== sentence.toUpperCase() // Not all caps (likely headers)
                     );
 
+                // Get the last sentence position from the server
+                sendSocketMessage({
+                    task: "get_last_sentence_position",
+                    username: username
+                });
 
                 // Reset to first sentence
                 totalDailySentences = 10;
                 currentDailySentences = [];
                 positionFirstDailySentence = 0;
-                
 
-                for (let i = 0; i < totalDailySentences; i++) {
-                    let index = (lastSentencePosition + i) % allSentences.length;
-                    currentDailySentences.push(allSentences[index]);
-                }
-                //reset the sentence index to today's first sentence
-                currentSentenceIndex = 0; 
-                // Create navigation HTML with action buttons
-                //${allSentences[currentSentenceIndex]}
-                //${currentSentenceIndex + 1} / ${allSentences.length}
-                sentenceToTranslate = currentDailySentences[currentSentenceIndex];
-                
-                updateTranslation(sentenceToTranslate); //has inside handleTranslationResponse
-                console.log("dailySentenceToTranslate:", sentenceToTranslate);
-
-                //document.getElementById('div2viewer').style.display = "none"; //04 April 2025 STOPPED HERE
-            
-                pageleContent.innerHTML = `
-                    <div style="
-                        background-color: white;
-                        border-radius: 10px;
-                        padding: 30px;
-                        max-width: 600px;
-                        margin: 0 auto;
-                        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                    ">
-                        <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
-                            
-                            <div id="sentenceDisplay" style="flex: 1; text-align: center; font-size: 18px; padding: 20px;">
-                                ${currentDailySentences[currentSentenceIndex]}
-                            </div>
-                            
-                        </div>
-                        <div id="daily-translation-sentence" style="font-size: 13px; padding: 10px 20px; text-align: center;">loading...</div>
+                // Wait for the server response before proceeding
+                socket.addEventListener('message', function handleLastPosition(event) {
+                    const response = JSON.parse(event.data);
+                    if (response.task === 'get_last_sentence_position') {
+                        lastSentencePosition = response.last_sentence_position || 0;
                         
-                        <div style="text-align: center; margin-top: 10px;">
-                            <span id="sentenceCounter">
-                                ${currentSentenceIndex + 1} / ${totalDailySentences}
-                            </span>
-                        </div>
-                        <div id="actionButtons" style="position: relative; margin-top: 20px; text-align: center;">
-                            <img id="pageleRecord" src="images/recordingButton.png" alt="record icon"/>
-                            <img id="pageleRobot" src="images/robot_talk_white.png" alt="robot" data-speaking="false"/>
-                            
-                            <div id="recording-status" style="
-                                display: none;
-                                position: absolute;
-                                top: 0;
-                                left: 0;
-                                right: 0;
-                                bottom: 0;
-                                background-color: rgba(0, 0, 0, 0.7);
-                                flex-direction: column;
-                                align-items: center;
-                                justify-content: center;
-                                z-index: 1000;">
-                                <div class="status-spinner"></div>
-                                <div class="status-message">Processing...</div>
-                                <div class="timer">0.0s</div>
-                            </div>
-                        </div>
-                        <div id="prevNextButtons" style="display: flex; justify-content: space-between; margin: 0 40px;">
-                            <button id="prevSentence" style="font-size: 24px; padding: 10px 20px; background: transparent; border: none;">
-                                <img src="images/arrow-left.png" alt="←" style="width: 100%; height: 100%; vertical-align: middle; object-fit: contain; max-width: 35px;">
-                            </button>
-                            <button id="nextSentence" style="font-size: 24px; padding: 10px 20px; background: transparent; border: none;">
-                                <img src="images/arrow-right.png" alt="→" style="width: 100%; height: 100%; vertical-align: middle; object-fit: contain; max-width: 35px;">
-                            </button>
-                        </div>
-                    </div>
-                `;
-
-                // Add event listeners for navigation
-                document.getElementById('prevSentence').addEventListener('click', () => {
-                    if (currentSentenceIndex > 0) {
-                        currentSentenceIndex--;
-                        sentenceToTranslate = currentDailySentences[currentSentenceIndex];
-                        console.log("dailySentenceToTranslate:", sentenceToTranslate);
-                        updateTranslation(sentenceToTranslate); //has inside handleTranslationResponse
-                        updateSentenceDisplay();
-                    }
-                });
-
-                document.getElementById('nextSentence').addEventListener('click', () => {
-                    if (currentSentenceIndex < totalDailySentences - 1) {
-                        //if (currentSentenceIndex < allSentences.length - 1) { //previous code
-                        currentSentenceIndex++;
-                        sentenceToTranslate = currentDailySentences[currentSentenceIndex];
-                        updateTranslation(sentenceToTranslate); //has inside handleTranslationResponse
-                        console.log("dailySentenceToTranslate:", sentenceToTranslate);
-                        updateSentenceDisplay();
-
-                        //if we're at the end of the daily sentences, update the last sentence position
-                        if (currentSentenceIndex === totalDailySentences - 1) {
-                            lastSentencePosition = (lastSentencePosition + totalDailySentences + 1) % allSentences.length; //I should add +1 so next time we start on the next sentence ASK JASON
-                            // We should also save the last sentence position in the server right? 
-                            
+                        for (let i = 0; i < totalDailySentences; i++) {
+                            let index = (lastSentencePosition + i) % allSentences.length;
+                            currentDailySentences.push(allSentences[index]);
                         }
-                    }
-                });
-
-                // Add event listeners for action buttons
-                const pageleRecordBtn = document.getElementById('pageleRecord');
-                const pageleRobotBtn = document.getElementById('pageleRobot');
-
-                pageleRecordBtn.addEventListener('click', async () => {
-                    if (!isRecording) {
-                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                        mediaRecorder = new MediaRecorder(stream);
                         
-                        mediaRecorder.ondataavailable = event => {
-                            audioChunks.push(event.data);
-                        };
+                        //reset the sentence index to today's first sentence
+                        currentSentenceIndex = 0; 
+                        sentenceToTranslate = currentDailySentences[currentSentenceIndex];
+                        
+                        updateTranslation(sentenceToTranslate);
+                        console.log("dailySentenceToTranslate:", sentenceToTranslate);
 
-                        mediaRecorder.start();
-                        pageleRecordBtn.src = "images/stopRecButton.png";
-                        isRecording = true;
-                    } else {
-                        mediaRecorder.stop();
-                        isRecording = false;
-                        pageleRecordBtn.src = "images/recordingButton.png";
-                    }
-                    
-                    mediaRecorder.onstop = () => {
-                        // Use the current sentence for comparison
-                        lines = [allSentences[currentSentenceIndex]];
-                        lineNum = 0;
-                        createBlobAndConnect();
-                    };
-                });
+                        //document.getElementById('div2viewer').style.display = "none"; //04 April 2025 STOPPED HERE
+            
+                        pageleContent.innerHTML = `
+                            <div style="
+                                background-color: white;
+                                border-radius: 10px;
+                                padding: 30px;
+                                max-width: 600px;
+                                margin: 0 auto;
+                                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                            ">
+                                <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
+                                    
+                                    <div id="sentenceDisplay" style="flex: 1; text-align: center; font-size: 18px; padding: 20px;">
+                                        ${currentDailySentences[currentSentenceIndex]}
+                                    </div>
+                                    
+                                </div>
+                                <div id="daily-translation-sentence" style="font-size: 13px; padding: 10px 20px; text-align: center;">loading...</div>
+                                
+                                <div style="text-align: center; margin-top: 10px;">
+                                    <span id="sentenceCounter">
+                                        ${currentSentenceIndex + 1} / ${totalDailySentences}
+                                    </span>
+                                </div>
+                                <div id="actionButtons" style="position: relative; margin-top: 20px; text-align: center;">
+                                    <img id="pageleRecord" src="images/recordingButton.png" alt="record icon"/>
+                                    <img id="pageleRobot" src="images/robot_talk_white.png" alt="robot" data-speaking="false"/>
+                                    
+                                    <div id="recording-status" style="
+                                        display: none;
+                                        position: absolute;
+                                        top: 0;
+                                        left: 0;
+                                        right: 0;
+                                        bottom: 0;
+                                        background-color: rgba(0, 0, 0, 0.7);
+                                        flex-direction: column;
+                                        align-items: center;
+                                        justify-content: center;
+                                        z-index: 1000;">
+                                        <div class="status-spinner"></div>
+                                        <div class="status-message">Processing...</div>
+                                        <div class="timer">0.0s</div>
+                                    </div>
+                                </div>
+                                <div id="prevNextButtons" style="display: flex; justify-content: space-between; margin: 0 40px;">
+                                    <button id="prevSentence" style="font-size: 24px; padding: 10px 20px; background: transparent; border: none;">
+                                        <img src="images/arrow-left.png" alt="←" style="width: 100%; height: 100%; vertical-align: middle; object-fit: contain; max-width: 35px;">
+                                    </button>
+                                    <button id="nextSentence" style="font-size: 24px; padding: 10px 20px; background: transparent; border: none;">
+                                        <img src="images/arrow-right.png" alt="→" style="width: 100%; height: 100%; vertical-align: middle; object-fit: contain; max-width: 35px;">
+                                    </button>
+                                </div>
+                            </div>
+                        `;
 
-                pageleRobotBtn.addEventListener('click', () => {
-                    const isCurrentlySpeaking = pageleRobotBtn.getAttribute('data-speaking') === 'true';
-                    
-                    if (isCurrentlySpeaking) {
-                        window.speechSynthesis.cancel();
-                        pageleRobotBtn.setAttribute('data-speaking', 'false');
-                        pageleRobotBtn.style.filter = 'brightness(1)';
-                    } else {
-                        pageleRobotBtn.setAttribute('data-speaking', 'true');
-                        pageleRobotBtn.style.filter = 'brightness(0.7)';
-                        textToSpeech(allSentences[currentSentenceIndex]);
+                        // Add event listeners for navigation
+                        document.getElementById('prevSentence').addEventListener('click', () => {
+                            if (currentSentenceIndex > 0) {
+                                currentSentenceIndex--;
+                                sentenceToTranslate = currentDailySentences[currentSentenceIndex];
+                                console.log("dailySentenceToTranslate:", sentenceToTranslate);
+                                updateTranslation(sentenceToTranslate); //has inside handleTranslationResponse
+                                updateSentenceDisplay();
+
+                                socket.removeEventListener('message', handleLastPosition);
+                            }
+                        });
+
+                        document.getElementById('nextSentence').addEventListener('click', () => {
+                            if (currentSentenceIndex < totalDailySentences - 1) {
+                                //if (currentSentenceIndex < allSentences.length - 1) { //previous code
+                                currentSentenceIndex++;
+                                sentenceToTranslate = currentDailySentences[currentSentenceIndex];
+                                updateTranslation(sentenceToTranslate); //has inside handleTranslationResponse
+                                console.log("dailySentenceToTranslate:", sentenceToTranslate);
+                                updateSentenceDisplay();
+
+                                //if we're at the end of the daily sentences, update the last sentence position
+                                if (currentSentenceIndex === totalDailySentences - 1) {
+                                    lastSentencePosition = (lastSentencePosition + totalDailySentences + 1) % allSentences.length; //I should add +1 so next time we start on the next sentence ASK JASON
+                                     
+                                    // Save the new last sentence position to the server
+                                    sendSocketMessage({
+                                        task: "update_last_sentence_position",
+                                        username: username,
+                                        last_sentence_position: lastSentencePosition
+                                    });
+
+                                    // Show congratulatory message
+                                    pageleContent.innerHTML = `
+                                        <div style="
+                                            background-color: white;
+                                            border-radius: 10px;
+                                            padding: 30px;
+                                            max-width: 600px;
+                                            margin: 0 auto;
+                                            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                                            text-align: center;
+                                        ">
+                                            <h2 style="color: #4CAF50;">Congratulations!</h2>
+                                            <p style="font-size: 18px;">Daily challenge completed</p>
+                                            <button onclick="location.reload()" style="
+                                                background-color: #4CAF50;
+                                                color: white;
+                                                padding: 10px 20px;
+                                                border: none;
+                                                border-radius: 5px;
+                                                cursor: pointer;
+                                                margin-top: 20px;
+                                            ">Start New Challenge</button>
+                                        </div>
+                                    `;
+                                }
+                            }
+                        });
+
+                        // Add event listeners for action buttons
+                        const pageleRecordBtn = document.getElementById('pageleRecord');
+                        const pageleRobotBtn = document.getElementById('pageleRobot');
+
+                        pageleRecordBtn.addEventListener('click', async () => {
+                            if (!isRecording) {
+                                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                                mediaRecorder = new MediaRecorder(stream);
+                                
+                                mediaRecorder.ondataavailable = event => {
+                                    audioChunks.push(event.data);
+                                };
+
+                                mediaRecorder.start();
+                                pageleRecordBtn.src = "images/stopRecButton.png";
+                                isRecording = true;
+                            } else {
+                                mediaRecorder.stop();
+                                isRecording = false;
+                                pageleRecordBtn.src = "images/recordingButton.png";
+                            }
+                            
+                            mediaRecorder.onstop = () => {
+                                // Use the current sentence for comparison
+                                lines = [allSentences[currentSentenceIndex]];
+                                lineNum = 0;
+                                createBlobAndConnect();
+                            };
+                        });
+
+                        pageleRobotBtn.addEventListener('click', () => {
+                            const isCurrentlySpeaking = pageleRobotBtn.getAttribute('data-speaking') === 'true';
+                            
+                            if (isCurrentlySpeaking) {
+                                window.speechSynthesis.cancel();
+                                pageleRobotBtn.setAttribute('data-speaking', 'false');
+                                pageleRobotBtn.style.filter = 'brightness(1)';
+                            } else {
+                                pageleRobotBtn.setAttribute('data-speaking', 'true');
+                                pageleRobotBtn.style.filter = 'brightness(0.7)';
+                                textToSpeech(allSentences[currentSentenceIndex]);
+                            }
+                        });
                     }
                 });
             })

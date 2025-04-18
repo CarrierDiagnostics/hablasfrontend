@@ -1,0 +1,112 @@
+<style>
+
+    body {
+        background-color:  #bfe9f0;
+        margin: 1%;
+        overflow: hidden;
+        width: 99vw; 
+        height: 90svh;
+        justify-content:center;
+        align-items: center; 
+    }
+    #bottom-section {
+        display: flex;
+        gap: 10px;
+    }
+
+</style>
+<body>
+    <input id="username" type="text" placeholder="insert your username"/></input>
+    <div id="points-per-sentence">
+        <p>Points per sentence</p>
+    </div>
+    <div id="total-points">
+        <p>Total points</p>
+    </div>
+    <div id="bottom-section">
+        <div id="btn-load-book">
+            <p>Load book</p>
+        </div>
+        <div id="result">
+            <p>Result</p>
+        </div>
+    </div>
+</body>
+
+<script>
+    //we'll use set timeout to automatically load the next sentence
+    const usernameInput = document.getElementById('username');
+    const listOfSentencesElement = document.getElementById('points-per-sentence');
+    const totalPointsElement = document.getElementById('total-points');
+
+    //values we'll get from the server
+    let totalPoints = 0;
+    let maxPoints = 0;
+    let percentageOfPointsValue = 0;
+    let listOfSentences = {}; //change into object (sentence index - points)
+    let percentageOfPointsMessage = "";
+
+
+    function createWebSocketConnection() { 
+        const socket = new WebSocket('wss://carriertech.uk:8676');
+        //const socket = new WebSocket('ws://localhost:8675');
+        socket.addEventListener('open', (event) => {
+            console.log('WebSocket connection established');
+        });
+
+        socket.addEventListener('error', (error) => {
+            console.error('WebSocket error:', error);
+        });
+        socket.addEventListener('message', (event) => {
+            const response = JSON.parse(event.data);
+                console.log("Received WebSocket message:", response);
+                
+                const statusIndicator = document.getElementById('recording-status');
+                if (statusIndicator) {
+                    // Stop and clear the timer
+                    clearInterval(timerInterval);
+                    const finalTime = ((Date.now() - processingStartTime) / 1000).toFixed(1);
+                    const timerElement = statusIndicator.querySelector('.timer');
+                    if (timerElement) {
+                        timerElement.textContent = `${finalTime}s`;
+                    }
+                    // Hide the status indicator without a timeout
+                    statusIndicator.style.display = 'none';
+                }
+
+                socket.addEventListener('close', (event) => {
+                });
+        });
+        return socket;
+    }
+    function displayListOfSentences() {
+        //from the backend, for the moment I'll use a hardcoded list
+        listOfSentences = {
+            "sentence 1": 10,
+            "sentence 2": 20,
+            "sentence 3": 30,
+            "sentence 4": 40,
+        };
+        Object.entries(listOfSentences).forEach(([key, value]) => {
+            const element = document.createElement('div');
+            element.textContent = `Key: ${key}, Value: ${value}`;
+            listOfSentencesElement.appendChild(element);
+        });
+    }
+    // need an if loop so this appears when the daily challenge is completed
+    function displayTotalPoints() {
+        totalPointsElement.textContent = `Total points: ${totalPoints}`;
+    }
+    function percentageOfPoints(points) {
+        percentageOfPointsValue = (totalpoints / maxPoints) * 100;
+        if (percentageOfPointsValue > 50) {
+            percentageOfPointsMessage = "You're doing great!";
+        } else {
+            percentageOfPointsMessage = "hmm.. it's the thought that counts...";
+        }
+        return percentageOfPointsMessage;
+    }
+
+    usernameInput.addEventListener('input', () => {
+        username = usernameInput.value;
+</script>
